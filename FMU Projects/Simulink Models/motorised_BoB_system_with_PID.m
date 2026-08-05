@@ -100,8 +100,8 @@ J_motor.Unit = "kg*m^2";
 
 %% PID Controller
 
-K_u = 1.0;
-T_u = 2.371;
+K_u = 10.0;
+T_u = 0.7428;
 
 KPpid = Simulink.Parameter;
 KPpid.Value = 0.6*K_u;
