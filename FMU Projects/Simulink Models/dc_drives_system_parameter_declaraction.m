@@ -1,44 +1,24 @@
-%% Position controller
-KPp = Simulink.Parameter;
-KPp.Value = 10.0;
-KPp.CoderInfo.StorageClass = 'ExportedGlobal';
-KPp.Description = "Position controller proportional gain";
-KPp.Unit = "";
+%% Bandwidths
+bandwidth_ratio = 5.0;
+W_ci_val = 1000;
 
-%% Current controller P gain
-KPi = Simulink.Parameter;
-KPi.Value = 8.0;
-KPi.CoderInfo.StorageClass = 'ExportedGlobal';
-KPi.Description = "Current controller proportional gain";
-KPi.Unit = "";
+W_ci = Simulink.Parameter;
+W_ci.Value = W_ci_val;   
+W_ci.CoderInfo.StorageClass = 'ExportedGlobal';
+W_ci.Description = "Inverter first-order time constant";
+W_ci.Unit = "1/s";
 
-%% Current controller I gain
-KIi = Simulink.Parameter;
-KIi.Value = 500.0;
-KIi.CoderInfo.StorageClass = 'ExportedGlobal';
-KIi.Description = "Current controller integral gain";
-KIi.Unit = "";
+W_cw = Simulink.Parameter;
+W_cw.Value = W_ci_val/bandwidth_ratio;        
+W_cw.CoderInfo.StorageClass = 'ExportedGlobal';
+W_cw.Description = "Inverter first-order time constant";
+W_cw.Unit = "1/s";
 
-%% Current controller D gain
-KDi = Simulink.Parameter;
-KDi.Value = 0.001;
-KDi.CoderInfo.StorageClass = 'ExportedGlobal';
-KDi.Description = "Current controller derivative gain";
-KDi.Unit = "";
-
-%% Velocity controller P gain
-KPv = Simulink.Parameter;
-KPv.Value = 1.0;
-KPv.CoderInfo.StorageClass = 'ExportedGlobal';
-KPv.Description = "Velocity controller proportional gain";
-KPv.Unit = "";
-
-%% Velocity controller I gain
-KIv = Simulink.Parameter;
-KIv.Value = 20.0;
-KIv.CoderInfo.StorageClass = 'ExportedGlobal';
-KIv.Description = "Velocity controller integral gain";
-KIv.Unit = "";
+W_cq = Simulink.Parameter;
+W_cq.Value = W_ci_val/bandwidth_ratio/bandwidth_ratio;
+W_cq.CoderInfo.StorageClass = 'ExportedGlobal';
+W_cq.Description = "Inverter first-order time constant";
+W_cq.Unit = "1/s";
 
 %% Inverter time constant
 t_inv = Simulink.Parameter;
@@ -55,11 +35,11 @@ U_DC.Description = "DC supply voltage";
 U_DC.Unit = "V";
 
 %% Motor inductance
-L = Simulink.Parameter;
-L.Value = 2e-3;
-L.CoderInfo.StorageClass = 'ExportedGlobal';
-L.Description = "Motor phase inductance";
-L.Unit = "H";
+L_a = Simulink.Parameter;
+L_a.Value = 2e-3;
+L_a.CoderInfo.StorageClass = 'ExportedGlobal';
+L_a.Description = "Motor phase inductance";
+L_a.Unit = "H";
 
 %% Torque constant
 k_t = Simulink.Parameter;
@@ -76,11 +56,11 @@ k_e.Description = "Back EMF constant";
 k_e.Unit = "V/(rad/s)";
 
 %% Motor resistance
-R = Simulink.Parameter;
-R.Value = 1.2;
-R.CoderInfo.StorageClass = 'ExportedGlobal';
-R.Description = "Motor phase resistance";
-R.Unit = "Ohm";
+R_a = Simulink.Parameter;
+R_a.Value = 1.2;
+R_a.CoderInfo.StorageClass = 'ExportedGlobal';
+R_a.Description = "Motor phase resistance";
+R_a.Unit = "Ohm";
 
 %% Motor inertia
 J_motor = Simulink.Parameter;
@@ -110,9 +90,9 @@ kFrs.CoderInfo.StorageClass = 'ExportedGlobal';
 kFrs.Description = "Viscous friction coefficient";
 kFrs.Unit = "N*m/(rad/s)";
 
-%% Friction
-friction = Simulink.Parameter;
-friction.Value = true;
-friction.CoderInfo.StorageClass = 'ExportedGlobal';
-friction.Description = "Friction ON/OFF";
-friction.Unit = "";
+%% Choice of mechanics
+choice = Simulink.Parameter;
+choice.Value = 1;
+choice.CoderInfo.StorageClass = 'ExportedGlobal';
+choice.Description = "Choice of variant subsystem";
+choice.Unit = "";
