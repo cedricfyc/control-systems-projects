@@ -1,53 +1,24 @@
-%% Position controller
-KPp = Simulink.Parameter;
-KPp.Value = 12.0;
-KPp.CoderInfo.StorageClass = 'ExportedGlobal';
-KPp.Description = "Position controller proportional gain";
-KPp.Unit = "";
+%% Bandwidths
+bandwidth_ratio = 5.0;
+W_ci_val = 1000;
 
-KIp = Simulink.Parameter;
-KIp.Value = 3.0;
-KIp.CoderInfo.StorageClass = 'ExportedGlobal';
-KIp.Description = "Position controller integral gain";
-KIp.Unit = "";
+W_ci = Simulink.Parameter;
+W_ci.Value = W_ci_val;   
+W_ci.CoderInfo.StorageClass = 'ExportedGlobal';
+W_ci.Description = "Inverter first-order time constant";
+W_ci.Unit = "1/s";
 
-KDp = Simulink.Parameter;
-KDp.Value = 3.0;
-KDp.CoderInfo.StorageClass = 'ExportedGlobal';
-KDp.Description = "Position controller integral gain";
-KDp.Unit = "";
+W_cw = Simulink.Parameter;
+W_cw.Value = W_ci_val/bandwidth_ratio;        
+W_cw.CoderInfo.StorageClass = 'ExportedGlobal';
+W_cw.Description = "Inverter first-order time constant";
+W_cw.Unit = "1/s";
 
-%% Current controller
-KPi = Simulink.Parameter;
-KPi.Value = 1.50;
-KPi.CoderInfo.StorageClass = 'ExportedGlobal';
-KPi.Description = "Current controller proportional gain";
-KPi.Unit = "";
-
-KIi = Simulink.Parameter;
-KIi.Value = 150;
-KIi.CoderInfo.StorageClass = 'ExportedGlobal';
-KIi.Description = "Current controller integral gain";
-KIi.Unit = "";
-
-KDi = Simulink.Parameter;
-KDi.Value = 0.005;
-KDi.CoderInfo.StorageClass = 'ExportedGlobal';
-KDi.Description = "Current controller derivative gain";
-KDi.Unit = "";
-
-%% Velocity controller 
-KPv = Simulink.Parameter;
-KPv.Value = 3.49;
-KPv.CoderInfo.StorageClass = 'ExportedGlobal';
-KPv.Description = "Velocity controller proportional gain";
-KPv.Unit = "";
-
-KIv = Simulink.Parameter;
-KIv.Value = 250.0;
-KIv.CoderInfo.StorageClass = 'ExportedGlobal';
-KIv.Description = "Velocity controller integral gain";
-KIv.Unit = "";
+W_cq = Simulink.Parameter;
+W_cq.Value = W_ci_val/bandwidth_ratio/bandwidth_ratio;
+W_cq.CoderInfo.StorageClass = 'ExportedGlobal';
+W_cq.Description = "Inverter first-order time constant";
+W_cq.Unit = "1/s";
 
 %% Inverter time constant
 t_inv = Simulink.Parameter;
@@ -99,6 +70,7 @@ J_motor.Description = "Motor inertia";
 J_motor.Unit = "kg*m^2";
 
 %% PID Controller
+% Classical PID 
 
 K_u = 10.0;
 T_u = 0.7428;
@@ -162,3 +134,9 @@ g.Value = 9.80665;
 g.CoderInfo.StorageClass = 'ExportedGlobal';
 g.Description = "PID - Derivative Gain";
 g.Unit = "m/s^2";
+
+kFrs = Simulink.Parameter;
+kFrs.Value = 0.001;
+kFrs.CoderInfo.StorageClass = 'ExportedGlobal';
+kFrs.Description = "Viscous friction coefficient";
+kFrs.Unit = "N*m/(rad/s)";
