@@ -5,19 +5,19 @@ W_ci_val = 1000;
 W_ci = Simulink.Parameter;
 W_ci.Value = W_ci_val;   
 W_ci.CoderInfo.StorageClass = 'ExportedGlobal';
-W_ci.Description = "Inverter first-order time constant";
+W_ci.Description = "Current loop bandwidth";
 W_ci.Unit = "1/s";
 
 W_cw = Simulink.Parameter;
 W_cw.Value = W_ci_val/bandwidth_ratio;        
 W_cw.CoderInfo.StorageClass = 'ExportedGlobal';
-W_cw.Description = "Inverter first-order time constant";
+W_cw.Description = "Velocity loop bandwidth";
 W_cw.Unit = "1/s";
 
 W_cq = Simulink.Parameter;
 W_cq.Value = W_ci_val/bandwidth_ratio/bandwidth_ratio;
 W_cq.CoderInfo.StorageClass = 'ExportedGlobal';
-W_cq.Description = "Inverter first-order time constant";
+W_cq.Description = "Position loop bandwidth";
 W_cq.Unit = "1/s";
 
 %% Inverter time constant
@@ -78,19 +78,19 @@ T_u = 0.7428;
 KPpid = Simulink.Parameter;
 KPpid.Value = 0.6*K_u;
 KPpid.CoderInfo.StorageClass = 'ExportedGlobal';
-KPpid.Description = "PID - Proportional Gain";
+KPpid.Description = "PID - Proportional gain";
 KPpid.Unit = "";
 
 KIpid = Simulink.Parameter;
 KIpid.Value = 1.2*K_u/T_u;
 KIpid.CoderInfo.StorageClass = 'ExportedGlobal';
-KIpid.Description = "PID - Integral Gain";
+KIpid.Description = "PID - Integral gain";
 KIpid.Unit = "";
 
 KDpid = Simulink.Parameter;
 KDpid.Value = 0.075*K_u*T_u;
 KDpid.CoderInfo.StorageClass = 'ExportedGlobal';
-KDpid.Description = "PID - Derivative Gain";
+KDpid.Description = "PID - Derivative gain";
 KDpid.Unit = "";
 
 %% Beam Properties
@@ -112,27 +112,21 @@ J_beam.Unit = "kg*m*m";
 m_ball = Simulink.Parameter;
 m_ball.Value = 0.0025;
 m_ball.CoderInfo.StorageClass = 'ExportedGlobal';
-m_ball.Description = "Ball Mass";
+m_ball.Description = "Ball mass";
 m_ball.Unit = "kg";
 
 r_ball = Simulink.Parameter;
 r_ball.Value = 0.0005;
 r_ball.CoderInfo.StorageClass = 'ExportedGlobal';
-r_ball.Description = "Ball Radius";
+r_ball.Description = "Ball radius";
 r_ball.Unit = "m";
-
-c = Simulink.Parameter;
-c.Value = 0.001;
-c.CoderInfo.StorageClass = 'ExportedGlobal';
-c.Description = "Sliding Friction Coefficient";
-c.Unit = "N*m/(rad/s)";
 
 %% General Dynamics
 
 g = Simulink.Parameter;
 g.Value = 9.80665;
 g.CoderInfo.StorageClass = 'ExportedGlobal';
-g.Description = "PID - Derivative Gain";
+g.Description = "Gravitational acceleration";
 g.Unit = "m/s^2";
 
 kFrs = Simulink.Parameter;
