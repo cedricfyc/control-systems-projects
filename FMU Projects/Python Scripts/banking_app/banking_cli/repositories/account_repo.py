@@ -9,7 +9,7 @@ from decimal import Decimal
 from typing import List, Optional
 from uuid import UUID
 
-from ..database.db_connector import get_connection, transaction
+from ..database.db_connector import get_connection, db_transaction
 from ..models.account import Account, AccountStatus, AccountType
 
 
@@ -42,7 +42,7 @@ class AccountRepository:
 
         """
 
-        with transaction() as conn:
+        with db_transaction() as conn:
             conn.execute(
                 """
                 INSERT INTO accounts (
@@ -170,7 +170,7 @@ class AccountRepository:
         return [Account.from_db_row(r) for r in rows]
 
 
-    def exists(self, account_number: Optional[str] = None, customer_id: Optional[UUID] = None) -> bool:
+    def exists(self, account_number: str) -> bool:
         """
         Check if an account exists in database by account_number or customer_id.
 
@@ -298,7 +298,7 @@ class AccountRepository:
         Optimistic-locking balance update. Fails if `version` has moved on since it was read,
         which indicates a concurrent modification.
         """
-        with transaction() as conn:
+        with db_transaction() as conn:
             cursor = conn.execute(
                 """
                 UPDATE accounts
@@ -327,7 +327,7 @@ class AccountRepository:
         -------
 
         """
-        with transaction() as conn:
+        with db_transaction() as conn:
             cursor = conn.execute(
                 "UPDATE accounts SET status = ?, version = version + 1 WHERE account_id = ?",
                 (status.value, str(account_id)),
@@ -340,7 +340,7 @@ class AccountRepository:
         """
         Full-row update. Increments version; raises on stale version.
         """
-        with transaction() as conn:
+        with db_transaction() as conn:
             cursor = conn.execute(
                 """
                 UPDATE accounts SET
@@ -367,13 +367,25 @@ class AccountRepository:
                 raise OptimisticLockError(
                     f"Update failed for account {account.account_id}: version mismatch or not found"
                 )
+
+        # Return updated entry
         return self.get_by_id(account.account_id)
 
     # ---------- DELETE ----------
 
     def delete(self, account_id: UUID) -> None:
-        """Hard delete. Prefer update_status(..., AccountStatus.CLOSED) for audit purposes."""
-        with transaction() as conn:
+        """
+        Hard delete. Prefer update_status(..., CustomerStatus.CLOSED) for audit purposes.
+
+        Parameters
+        ----------
+        account_id
+
+        Returns
+        -------
+
+        """
+        with db_transaction() as conn:
             cursor = conn.execute(
                 "DELETE FROM accounts WHERE account_id = ?", (str(account_id),)
             )

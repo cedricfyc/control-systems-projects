@@ -22,12 +22,13 @@ class Account:
     account_number: str
     account_type: AccountType
     account_status: AccountStatus = AccountStatus.ACTIVE
-    currency:str = "EUR"
+    currency: str = "EUR"
     balance: Decimal = Decimal("0.00")
     interest_rate: Optional[Decimal] = None
     overdraft_limit: Optional[Decimal] = None
     min_balance: Decimal = Decimal("0.00")
     pin_hash: str = ""
+    # Generates a random UUID on call
     account_id: UUID = field(default_factory=uuid4)
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     version: int = 0
@@ -52,20 +53,20 @@ class Account:
         }
 
     @staticmethod
-    def from_db_row(rows: dict) -> "Account":
+    def from_db_row(row: dict) -> "Account":
         """Reconstruct an Account from a DB row (dict-like: sqlite3.Row, psycopg2 DictRow, etc.)."""
         return Account(
-            account_id=UUID(rows["account_id"]),
-            account_number=rows["account_number"],
-            customer_id=UUID(rows["customer_id"]),
-            account_type=AccountType(rows["account_type"]),
-            balance=Decimal(rows["balance"]),
-            currency=rows["currency"],
-            interest_rate=Decimal(rows["interest_rate"]) if rows["interest_rate"] is not None else None,
-            overdraft_limit=Decimal(rows["overdraft_limit"]) if rows["overdraft_limit"] is not None else None,
-            min_balance=Decimal(rows["min_balance"]),
-            pin_hash=rows["pin_hash"],
-            account_status=AccountStatus(rows["status"]),
-            created_at=datetime.fromisoformat(rows["created_at"]),
-            version=rows["version"],
+            account_id=UUID(row["account_id"]),
+            account_number=row["account_number"],
+            customer_id=UUID(row["customer_id"]),
+            account_type=AccountType(row["account_type"]),
+            balance=Decimal(row["balance"]),
+            currency=row["currency"],
+            interest_rate=Decimal(row["interest_rate"]) if row["interest_rate"] is not None else None,
+            overdraft_limit=Decimal(row["overdraft_limit"]) if row["overdraft_limit"] is not None else None,
+            min_balance=Decimal(row["min_balance"]),
+            pin_hash=row["pin_hash"],
+            account_status=AccountStatus(row["status"]),
+            created_at=datetime.fromisoformat(row["created_at"]),
+            version=row["version"],
         )

@@ -7,7 +7,7 @@ from __future__ import annotations
 from ..utils.enums import CustomerStatus
 
 from dataclasses import dataclass, field
-from datetime import datetime, date
+from datetime import datetime, timezone, date
 from typing import Optional
 from uuid import UUID
 
@@ -37,7 +37,7 @@ class Customer:
 
     # Custom address object
     address: Optional[Address] = None
-    created_at: datetime = field(default_factory=datetime.now)
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     customer_status: CustomerStatus = CustomerStatus.ACTIVE
     kyc_verified: bool = field(default=False)
 

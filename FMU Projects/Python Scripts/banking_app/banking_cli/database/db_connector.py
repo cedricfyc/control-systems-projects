@@ -63,7 +63,27 @@ CREATE INDEX IF NOT EXISTS idx_accounts_status
 CREATE INDEX IF NOT EXISTS idx_accounts_account_type
     ON accounts(account_type);
     
+    
+CREATE TABLE IF NOT EXISTS transactions (
+    transaction_id              TEXT PRIMARY KEY,
+    account_id                  TEXT NOT NULL,
+    FOREIGN KEY (account_id) 
+        REFERENCES accounts(account_id)),
+    transaction_type            TEXT NOT NULL,
+    amount                      TEXT NOT NULL
+    balance_after               TEXT NOT NULL,
+    timestamp                   TEXT NOT NULL,
+    transaction_status          TEXT NOT NULL,
+    reference_id                TEXT NOT NULL,
+    description                 TEXT,
+    counterparty_account_id     TEXT,
+);    
 
+CREATE INDEX IF NOT EXISTS idx_transactions_transaction_id
+    ON transactions(transaction_id);
+    
+CREATE INDEX IF NOT EXISTS idx_transactions_reference_id
+    ON transactions(reference_id);
 
 """
 
@@ -95,7 +115,7 @@ def init_db() -> None:
 
 
 @contextmanager
-def transaction():
+def db_transaction():
     """
     Context manager for an atomic block of work.
     Commits on success, rolls back on any exception.
