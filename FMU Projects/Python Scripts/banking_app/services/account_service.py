@@ -2,7 +2,7 @@ from decimal import Decimal
 from typing import Optional
 from uuid import UUID, uuid4
 
-from banking_app.services.audit_service import AuditLogService
+from banking_app.services.audit_log_service import AuditLogService
 from banking_app.services.auth_service import AuthorisationService
 
 from banking_app.models.account import Account
@@ -199,11 +199,16 @@ class AccountService:
         uniqueness enforcement to the database as well.
 
         Returns
+
         -------
 
         """
+        account_count = self.account_repository.count(None)
+        # Get randomised part length e.g. 8 - len(10000) = 3
+        # 3 randomised numbers are added with 10000 existing accounts
+        randomised_segment_length = 8 - len(str(account_count  + 1000))
+        randomised_no = str(uuid4().int)[:randomised_segment_length]
 
         # Account number can only be numbers 1000+
         # Check database and return incremented count
-        # INCOMPLETE
-        return str(uuid4().int)[:10]
+        return str(randomised_no) + str(account_count + 1000)

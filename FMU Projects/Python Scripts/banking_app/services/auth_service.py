@@ -45,7 +45,7 @@ class AuthorisationService:
         if not user.has_permission(permission):
             raise AuthorisationError(
                 f"User '{user.username}' with role "
-                f"'{user.role.value}' lacks permission "
+                f"'{user.user_role.value}' lacks permission "
                 f"'{permission.value}'."
             )
 
@@ -67,7 +67,7 @@ class AuthorisationService:
         """
 
         # Case of customer
-        if user.role == user.role.CUSTOMER:
+        if user.user_role == user.user_role.CUSTOMER:
             if user.customer_id != target_customer_id:
                 raise AuthorisationError(
                     "Customers can only have access to their own data."

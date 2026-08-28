@@ -10,9 +10,10 @@ from banking_app.models.user_role import UserRole
 from banking_app.repositories.account_repo import AccountRepository
 from banking_app.repositories.audit_log_repo import AuditLogRepository
 from banking_app.repositories.customer_repo import CustomerRepository
+from banking_app.repositories.user_repo import UserRepository
 
 from banking_app.services.account_service import AccountService
-from banking_app.services.audit_service import AuditLogService
+from banking_app.services.audit_log_service import AuditLogService
 
 from datetime import date
 
@@ -25,6 +26,8 @@ def main():
     account_repository = AccountRepository()
     customer_repository = CustomerRepository()
     audit_log_repo = AuditLogRepository()
+    user_repo = UserRepository()
+
     audit_log_service = AuditLogService(audit_log_repo)
     customer_id = uuid4()
     current_customer = Customer(
@@ -35,6 +38,7 @@ def main():
         date_of_birth=date(2023, 9, 23),
         national_id="Mauritius"
     )
+
     customer_repository.create(
         current_customer
     )
@@ -43,8 +47,10 @@ def main():
         user_id=uuid4(),
         username="Cedric",
         password_hash="asdasd",
-        role=UserRole.ADMIN,
+        user_role=UserRole.ADMIN,
     )
+
+    user_repo.create(current_user)
 
     account_service = AccountService(
         account_repository,

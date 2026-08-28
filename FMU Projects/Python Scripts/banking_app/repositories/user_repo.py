@@ -10,14 +10,14 @@ from uuid import UUID
 
 from banking_app.database.db_connector import get_connection, db_transaction
 from banking_app.models.user import User, UserRole
-from banking_app.utils.enums import Permission
+from banking_app.utils.enums import UserStatus
 
 
-class CustomerNotFoundError(Exception):
+class UserNotFoundError(Exception):
     pass
 
 
-class CustomerRepository:
+class UserRepository:
     """
     CRUD operations against the storage backend for User object.
     """
@@ -26,7 +26,7 @@ class CustomerRepository:
 
     def create(self, user: User) -> User:
         """
-        Creates a Customer entry inside the database.
+        Creates a User entry inside the database.
 
         Parameters
         ----------
@@ -40,22 +40,20 @@ class CustomerRepository:
         with db_transaction() as conn:
             conn.execute(
                 """
-                INSERT INTO customers (
-                    customer_id, first_name, middle_name, last_name, date_of_birth,
-                    national_id, email, phone_number, address_street, address_city,
-                    address_zip, address_state, address_country, created_at,
-                    customer_status, kyc_verified
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO users (
+                    user_id, username, password_hash, user_role,
+                    customer_id, user_status, created_at, last_login_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     str(user.user_id),
                     user.username,
                     user.password_hash,
-                    user.role.value,
+                    user.user_role.value,
                     str(user.customer_id) if not None else None,
-                    str(user.is_active),
+                    user.user_status.value,
                     user.created_at.isoformat(),
-                    user.last_login_at.isoformat() if not None else None
+                    user.last_login_at.isoformat() if user.last_login_at is not None else None
                 ),
             )
         return user
@@ -64,11 +62,11 @@ class CustomerRepository:
 
     def get_by_id(self, user_id: UUID) -> User:
         """
-        Get a Customer object by its ID.
+        Get a User object by its ID.
 
         Parameters
         ----------
-        customer_id
+        user_id
 
         Returns
         -------
@@ -77,47 +75,21 @@ class CustomerRepository:
         conn = get_connection()
         try:
             row = conn.execute(
-                "SELECT * FROM customers WHERE customer_id = ?", (str(customer_id),)
+                "SELECT * FROM users WHERE user_id = ?", (str(user_id),)
             ).fetchone()
         finally:
             conn.close()
 
         if row is None:
-            raise CustomerNotFoundError(f"No customer with id {customer_id} found.")
+            raise UserNotFoundError(f"No user with id {user_id} found.")
 
-        # Retrieve the db entry and convert to Customer object
-        return Customer.from_db_row(row)
+        # Retrieve the db entry and convert to User object
+        return User.from_db_row(row)
 
 
-    def get_all_by_last_name(self, last_name: str) -> List[Customer]:
+    def list_all(self, limit: int = 100, offset: int = 0) -> List[User]:
         """
-        Get all Customers inside the database with a matching last name.
-
-        Parameters
-        ----------
-        last_name
-
-        Returns
-        -------
-
-        """
-        conn = get_connection()
-        try:
-            rows = conn.execute(
-                "SELECT * FROM customers WHERE customer_id = ?  ORDER BY created_at DESC",
-                (last_name,)
-            ).fetchall()
-        finally:
-            conn.close()
-
-
-        # Retrieve the db entry and convert to Customer object
-        return [Customer.from_db_row(r) for r in rows]
-
-
-    def list_all(self, limit: int = 100, offset: int = 0) -> List[Customer]:
-        """
-        Get all customers from the database in descending order.
+        Get all users from the database in descending order.
 
         Parameters
         ----------
@@ -131,21 +103,21 @@ class CustomerRepository:
         conn = get_connection()
         try:
             rows = conn.execute(
-                "SELECT * FROM accounts ORDER BY created_at DESC LIMIT ? OFFSET ?",
+                "SELECT * FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?",
                 (limit, offset),
             ).fetchall()
         finally:
             conn.close()
-        return [Customer.from_db_row(r) for r in rows]
+        return [User.from_db_row(r) for r in rows]
 
 
-    def exists(self, customer_id: Optional[UUID] = None) -> bool:
+    def exists(self, user_id: Optional[UUID] = None) -> bool:
         """
-        Check if a customer exists in database by customer_id.
+        Check if a user exists in database by user_id.
 
         Parameters
         ----------
-        customer_id
+        user_id
 
         Returns
         -------
@@ -154,8 +126,8 @@ class CustomerRepository:
         conn = get_connection()
         try:
             row = conn.execute(
-                "SELECT 1 FROM customers WHERE customer_id = ? LIMIT 1",
-                (customer_id,)
+                "SELECT 1 FROM users WHERE user_id = ? LIMIT 1",
+                (user_id,)
             ).fetchone()
 
         finally:
@@ -165,13 +137,13 @@ class CustomerRepository:
 
     def search(
             self,
-            customer_id: Optional[UUID] = None,
-            last_name: Optional[str] = None,
-            address_country: Optional[str] = None,
-            customer_status: Optional[CustomerStatus] = None,
+            user_id: Optional[UUID] = None,
+            username: Optional[str] = None,
+            user_role: Optional[UserRole] = None,
+            user_status: Optional[UserStatus] = None,
             limit: int = 100,
             offset: int = 0,
-    ) -> List[Customer]:
+    ) -> List[User]:
         """
         Flexible multi-criteria search. All filters are optional and combined with AND.
         Balance comparisons cast the stored TEXT column to REAL for numeric ordering.
@@ -180,10 +152,10 @@ class CustomerRepository:
         ----------
         offset
         limit
-        customer_id
-        last_name
-        address_country
-        customer_status
+        user_id
+        username
+        user_role
+        user_status
 
         Returns
         -------
@@ -192,22 +164,22 @@ class CustomerRepository:
         clauses = []
         params: list = []
 
-        if customer_id is not None:
-            clauses.append("customer_id = ?")
-            params.append(str(customer_id))
-        if last_name is not None:
-            clauses.append("last_name = ?")
-            params.append(last_name)
-        if address_country is not None:
-            clauses.append("address_country = ?")
-            params.append(address_country)
-        if customer_status is not None:
-            clauses.append("customer_status = ?")
-            params.append(customer_status.value)
+        if user_id is not None:
+            clauses.append("user_id = ?")
+            params.append(str(user_id))
+        if username is not None:
+            clauses.append("username = ?")
+            params.append(username)
+        if user_role is not None:
+            clauses.append("user_role = ?")
+            params.append(user_role.value)
+        if user_status is not None:
+            clauses.append("user_status = ?")
+            params.append(user_status.value)
 
         where_sql = f"WHERE {' AND '.join(clauses)}" if clauses else ""
         query = f"""
-                    SELECT * FROM customers
+                    SELECT * FROM users
                     {where_sql}
                     ORDER BY created_at DESC
                     LIMIT ? OFFSET ?
@@ -219,19 +191,28 @@ class CustomerRepository:
             rows = conn.execute(query, params).fetchall()
         finally:
             conn.close()
-        return [Customer.from_db_row(r) for r in rows]
+        return [User.from_db_row(r) for r in rows]
 
 
-    def count(self, customer_status: Optional[CustomerStatus] = None) -> int:
+    def count(self, user_status: Optional[UserStatus] = None) -> int:
+        """
+        Returns the count according to user status or the total database.
+
+        Args:
+            user_status:
+
+        Returns:
+
+        """
         conn = get_connection()
         try:
-            if customer_status is not None:
+            if user_status is not None:
                 row = conn.execute(
-                    "SELECT COUNT(*) AS cnt FROM customers WHERE customer_status = ?",
-                    (customer_status.value,)
+                    "SELECT COUNT(*) AS cnt FROM users WHERE user_status = ?",
+                    (user_status.value,)
                 ).fetchone()
             else:
-                row = conn.execute("SELECT COUNT(*) as cnt FROM customers").fetchone()
+                row = conn.execute("SELECT COUNT(*) as cnt FROM users").fetchone()
         finally:
             conn.close()
         return row["cnt"]
@@ -239,14 +220,14 @@ class CustomerRepository:
 
     # ----- UPDATE -----
 
-    def update_status(self, customer_id: UUID, customer_status: CustomerStatus) -> Customer:
+    def update_status(self, user_id: UUID, user_status: UserStatus) -> User:
         """
-        Update the customer status of the Customer entry.
+        Update the user status of the User entry.
 
         Parameters
         ----------
-        customer_id
-        customer_status
+        user_id
+        user_status
 
         Returns
         -------
@@ -254,21 +235,21 @@ class CustomerRepository:
         """
         with db_transaction() as conn:
             cursor = conn.execute(
-                "UPDATE customers SET customer = ? WHERE customer_id = ?",
-                (customer_status.value, str(customer_id)),
+                "UPDATE users SET user = ? WHERE user_id = ?",
+                (user_status.value, str(user_id)),
             )
             if cursor.rowcount == 0:
-                raise CustomerNotFoundError(f"No customer with id {customer_id}")
-        return self.get_by_id(customer_id)
+                raise UserNotFoundError(f"No user with id {user_id}")
+        return self.get_by_id(user_id)
 
 
-    def update(self, customer: Customer) -> Customer:
+    def update(self, user: User) -> User:
         """
-        Full-row update for a customer.
+        Full-row update for a user.
 
         Parameters
         ----------
-        customer
+        user
 
         Returns
         -------
@@ -279,45 +260,35 @@ class CustomerRepository:
             conn.execute(
                 """
                 UPDATE customers SET
-                    first_name = ?, middle_name = ?, last_name = ?,
-                    date_of_birth = ?, national_id = ?, email = ?,
-                    phone_number = ?, address_street = ?, address_city = ?,
-                    address_zip = ?, address_state = ?, address_country = ?,
-                    customer_status = ?, kyc_verified = ?
-                WHERE customer_id = ?
+                    username = ?, password_hash = ?, user_role = ?,
+                    custom_id = ?, user_status = ?, created_at = ?, last_login_at = ?
+                WHERE user_id = ?
                 """,
                 (
-                    customer.first_name,
-                    customer.middle_name,
-                    customer.last_name,
-                    customer.date_of_birth.isoformat(),
-                    customer.national_id,
-                    customer.email,
-                    customer.phone_number,
-                    customer.address.street,
-                    customer.address.city,
-                    customer.address.zip,
-                    customer.address.state,
-                    customer.address.country,
-                    customer.customer_status.value,
-                    customer.kyc_verified,
-                    str(customer.customer_id)
+                    user.username,
+                    user.password_hash,
+                    user.user_role.value,
+                    str(user.customer_id),
+                    user.user_status.value,
+                    user.created_at.isoformat(),
+                    user.last_login_at.isoformat(),
+                    str(user.user_id)
                 ),
             )
 
         # Return updated entry
-        return self.get_by_id(customer.customer_id)
+        return self.get_by_id(user.user_id)
 
 
     # ---------- DELETE ----------
 
-    def delete(self, customer_id: UUID) -> None:
+    def delete(self, user_id: UUID) -> None:
         """
-        Hard delete. Prefer update_status(..., CustomerStatus.CLOSED) for audit purposes.
+        Hard delete. Prefer update_status(..., UserStatus.DEACTIVATED) for audit purposes.
 
         Parameters
         ----------
-        customer_id
+        user_id
 
         Returns
         -------
@@ -325,7 +296,7 @@ class CustomerRepository:
         """
         with db_transaction() as conn:
             cursor = conn.execute(
-                "DELETE FROM customers WHERE customer_id = ?", (str(customer_id),)
+                "DELETE FROM users WHERE user_id = ?", (str(user_id),)
             )
             if cursor.rowcount == 0:
-                raise CustomerNotFoundError(f"No customer with id {customer_id}")
+                raise UserNotFoundError(f"No user with id {user_id}")

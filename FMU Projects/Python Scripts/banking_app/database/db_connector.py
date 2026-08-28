@@ -36,15 +36,13 @@ CREATE INDEX IF NOT EXISTS idx_customers_customer_status
 
 CREATE TABLE IF NOT EXISTS users (
     user_id        TEXT PRIMARY KEY,
-    customer_id    TEXT UNIQUE,
+    customer_id    TEXT,
     username       TEXT NOT NULL,
     password_hash  TEXT NOT NULL,
-    role           TEXT NOT NULL,
-    is_active      INTEGER NOT NULL DEFAULT 1,
+    user_role      TEXT NOT NULL,
+    user_status    TEXT NOT NULL,
     created_at     TEXT NOT NULL,
-    last_login_at  TEXT,
-    FOREIGN KEY (customer_id)
-        REFERENCES customers(customer_id)
+    last_login_at  TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_customer_id
@@ -110,13 +108,27 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     audit_outcome  TEXT NOT NULL,
     ip_address     TEXT,
     details        TEXT,
-    timestamp      TEXT NOT NULL,
-    FOREIGN KEY (user_id)
-        REFERENCES users(user_id)
+    timestamp      TEXT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id
     ON audit_logs(user_id);
+    
+    
+CREATE TABLE IF NOT EXISTS cards (
+    card_id             TEXT PRIMARY KEY,
+    account_id          TEXT NOT NULL UNIQUE,
+    account_number      TEXT NOT NULL,
+    card_type           TEXT NOT NULL,
+    card_status         TEXT NOT NULL,
+    expiry_date         TEXT NOT NULL,
+    cvv_hash            TEXT NOT NULL
+    FOREIGN KEY (account_id)
+        REFERENCES accounts(account_id),
+);
+
+CREATE INDEX IF NOT EXISTS idx_cards_card_id
+    ON cards(card_id);
 
 """
 

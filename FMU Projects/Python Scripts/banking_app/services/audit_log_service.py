@@ -12,8 +12,8 @@ class AuditLogService:
     AuditLog objects or interacting with the audit repository directly.
     """
 
-    def __init__(self, audit_log_repo: AuditLogRepository):
-        self.audit_log_repo = audit_log_repo
+    def __init__(self, audit_log_repository: AuditLogRepository):
+        self.audit_log_repository = audit_log_repository
 
     def log(self, audit_log: AuditLog):
         """
@@ -29,4 +29,7 @@ class AuditLogService:
         """
         # Convert audit logs to primitive dict format
         # Create persistent repo to store the log
-        return self.audit_log_repo.create(audit_log)
+        return self.audit_log_repository.create(audit_log)
+
+    def get_audit_logs(self):
+        pass

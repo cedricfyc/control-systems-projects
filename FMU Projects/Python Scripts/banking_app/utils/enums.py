@@ -69,13 +69,14 @@ class CardStatus(str, Enum):
     EXPIRED = "EXPIRED"
 
 
-class UserRole(str, Enum):
+class UserStatus(str, Enum):
     """
-    Enumeration for user role.
+    Enumeration for user status
     """
-    CUSTOMER = "CUSTOMER"
-    TELLER = "TELLER"
-    ADMIN = "ADMIN"
+    ACTIVE = "ACTIVE"
+    DEACTIVATED = "DEACTIVATED"
+    TERMINATED = "TERMINATED"
+
 
 class AuditAction(str, Enum):
     """

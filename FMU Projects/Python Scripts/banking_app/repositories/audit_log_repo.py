@@ -9,7 +9,8 @@ from typing import List, Optional
 from uuid import UUID
 
 from banking_app.database.db_connector import get_connection, db_transaction
-from banking_app.models.audit_log import AuditLog, AuditAction, AuditOutcome
+from banking_app.models.audit_log import AuditLog
+from banking_app.utils.enums import AuditAction, AuditOutcome
 
 
 class AuditLogNotFoundError(Exception):
@@ -244,7 +245,7 @@ class AuditLogRepository:
         with db_transaction() as conn:
             conn.execute(
                 """
-                UPDATE accounts SET
+                UPDATE audit_logs SET
                     user_id = ?, audit_action = ?, audit_outcome = ?,
                     ip_address = ?, details = ?, timestamp = ?
                 WHERE log_id = ?

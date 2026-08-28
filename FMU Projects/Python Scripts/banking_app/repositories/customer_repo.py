@@ -111,7 +111,7 @@ class CustomerRepository:
         conn = get_connection()
         try:
             rows = conn.execute(
-                "SELECT * FROM customers WHERE customer_id = ?  ORDER BY created_at DESC",
+                "SELECT * FROM customers WHERE last_name = ?  ORDER BY created_at DESC",
                 (last_name,)
             ).fetchall()
         finally:
@@ -320,7 +320,7 @@ class CustomerRepository:
 
     def delete(self, customer_id: UUID) -> None:
         """
-        Hard delete. Prefer update_status(..., CustomerStatus.CLOSED) for audit purposes.
+        Hard delete. Prefer update_status(..., CustomerStatus.DEACTIVATED) for audit purposes.
 
         Parameters
         ----------

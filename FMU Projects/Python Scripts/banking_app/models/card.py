@@ -18,6 +18,7 @@ class Card:
     """
     card_id: UUID
     account_id: UUID
+    account_number: str
     card_type: CardType
     card_status: CardStatus
     expiry_date: date
@@ -36,6 +37,7 @@ class Card:
         return {
             "card_id": str(self.card_id),
             "account_id": str(self.account_id),
+            "account_number": self.account_number,
             "card_type": self.card_type.value,
             "card_status": self.card_status.value,
             "expiry_date": self.expiry_date.isoformat(),
@@ -59,6 +61,7 @@ class Card:
         return Card(
             card_id=UUID(row["card_id"]),
             account_id=UUID(row["account_id"]),
+            account_number=row["account_number"],
             card_type=CardType(row["card_type"]),
             card_status=CardStatus(row["card_status"]),
             expiry_date=date.fromisoformat((row["expiry_date"])),
