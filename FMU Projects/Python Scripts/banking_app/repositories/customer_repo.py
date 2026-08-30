@@ -70,6 +70,7 @@ class CustomerRepository:
 
     # ----- READ -----
 
+
     def get_by_id(self, customer_id: UUID) -> Customer:
         """
         Get a Customer object by its ID.
@@ -97,46 +98,40 @@ class CustomerRepository:
         return Customer.from_db_row(row)
 
 
-    def get_by_name(
-            self,
-            first_name: str,
-            middle_name: str,
-            last_name: str
-    ) -> List[Customer]:
+    def get_customers_by_contact(self,
+                          phone_number: Optional[str],
+                          email: Optional[str]) -> List[Customer]:
         """
-        Get all Customers inside the database with a matching name.
+        Return customer list if they exist in database by profile information.
+        Called before creating the customer with a valid customer ID. A phone
+        number or email is highly recommended.
 
-        Parameters
-        ----------
-        first_name : str
-            Customer's first name.
-        middle_name : str
-            Customer's middle name.
-        last_name : str
-            Customer's last name.
+        Args:
+            phone_number:
+            email:
 
-        Returns
-        -------
-        List[Customer]
-            All customers matching the given first, middle, and last name.
+        Returns:
+
         """
+
+        clauses = []
+        params: list = []
+
+        if phone_number is not None:
+            clauses.append("phone_number = ?")
+            params.append(phone_number)
+        if email is not None:
+            clauses.append("email = ?")
+            params.append(email)
+
+        where_sql = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+        query = f"SELECT * FROM customers{where_sql} ORDER BY created_at DESC"
+
         conn = get_connection()
         try:
-            rows = conn.execute(
-                """
-                SELECT *
-                FROM customers
-                WHERE first_name = ?
-                  AND middle_name = ?
-                  AND last_name = ?
-                ORDER BY created_at DESC
-                """,
-                (first_name, middle_name, last_name)
-            ).fetchall()
+            rows = conn.execute(query, params).fetchall()
         finally:
             conn.close()
-
-        # Retrieve the db entries and convert them to Customer objects
         return [Customer.from_db_row(row) for row in rows]
 
 
@@ -156,7 +151,7 @@ class CustomerRepository:
         conn = get_connection()
         try:
             rows = conn.execute(
-                "SELECT * FROM accounts ORDER BY created_at DESC LIMIT ? OFFSET ?",
+                "SELECT * FROM customers ORDER BY created_at DESC LIMIT ? OFFSET ?",
                 (limit, offset),
             ).fetchall()
         finally:
@@ -192,9 +187,11 @@ class CustomerRepository:
                           middle_name: Optional[str],
                           last_name: str,
                           date_of_birth: date,
-                          national_id: str) -> bool:
+                          national_id: str,
+                          phone_number: Optional[str],
+                          email: Optional[str]) -> bool:
         """
-        Check if a customer exists in database by name, date of birth and nationality.
+        Check if a customer exists in database by profile information.
         Called before creating the customer with a valid customer ID.
 
         Args:
@@ -203,35 +200,47 @@ class CustomerRepository:
             last_name:
             date_of_birth:
             national_id:
+            phone_number:
+            email:
 
         Returns:
 
         """
 
-        sql_query = """
-            SELECT 1
-            FROM customers
-            WHERE first_name = ?
-              AND last_name = ?
-              AND date_of_birth = ?
-              AND national_id = ?
-        """
+        clauses = []
+        params: list = []
 
-        parameters = [first_name, last_name, date_of_birth, national_id]
+        if first_name is not None:
+            clauses.append("first_name = ?")
+            params.append(first_name)
+        if last_name is not None:
+            clauses.append("last_name = ?")
+            params.append(last_name)
+        if date_of_birth is not None:
+            clauses.append("date_of_birth = ?")
+            params.append(date_of_birth)
+        if national_id is not None:
+            clauses.append("national_id = ?")
+            params.append(national_id)
 
-        # Consider middle name as well if provided
         if middle_name is not None:
-            sql_query += " AND middle_name = ?"
-            parameters.insert(1, middle_name)
+            clauses.append("middle_name = ?")
+            params.append(middle_name)
+        if phone_number is not None:
+            clauses.append("phone_number = ?")
+            params.append(phone_number)
+        if email is not None:
+            clauses.append("email = ?")
+            params.append(email)
 
-        sql_query += " LIMIT 1"
+        where_sql = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+        query = f"SELECT 1 FROM customers{where_sql} LIMIT 1"
 
         conn = get_connection()
         try:
-            row = conn.execute(sql_query, parameters).fetchone()
+            row = conn.execute(query, params).fetchone()
         finally:
             conn.close()
-
         return row is not None
 
 
@@ -242,6 +251,8 @@ class CustomerRepository:
             last_name: Optional[str] = None,
             address_country: Optional[str] = None,
             customer_status: Optional[CustomerStatus] = None,
+            email: Optional[str] = None,
+            phone_number: Optional[str]  = None,
             limit: int = 100,
             offset: int = 0,
     ) -> List[Customer]:
@@ -254,12 +265,16 @@ class CustomerRepository:
         offset
         limit
         customer_id
+        first_name
         last_name
         address_country
         customer_status
 
         Returns
         -------
+
+        Args:
+            first_name:
 
         """
         clauses = []
@@ -280,6 +295,12 @@ class CustomerRepository:
         if customer_status is not None:
             clauses.append("customer_status = ?")
             params.append(customer_status.value)
+        if email is not None:
+            clauses.append("email = ?")
+            params.append(email)
+        if phone_number is not None:
+            clauses.append("phone_number = ?")
+            params.append(phone_number)
 
         where_sql = f"WHERE {' AND '.join(clauses)}" if clauses else ""
         query = f"""
@@ -338,7 +359,7 @@ class CustomerRepository:
         return self.get_by_id(customer_id)
 
 
-    def update(self, customer: Customer) -> Customer:
+    def update_all(self, customer: Customer) -> Customer:
         """
         Full-row update for a customer.
 

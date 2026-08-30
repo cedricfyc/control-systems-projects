@@ -48,7 +48,7 @@ class CustomerStatus(str, Enum):
     Enumeration for customer status.
     """
     ACTIVE = "ACTIVE"
-    SUSPENDED = "SUSPENDED"
+    DEACTIVATED = "DEACTIVATED"
     CLOSED = "CLOSED"
 
 

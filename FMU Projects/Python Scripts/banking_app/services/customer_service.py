@@ -9,7 +9,7 @@ from banking_app.utils.enums import Permission
 from uuid import UUID
 from typing import List, Optional
 from datetime import date
-import re
+from re import compile, match
 
 
 class CustomerService:
@@ -38,34 +38,31 @@ class CustomerService:
                           address_state: Optional[str],
                           address_street: Optional[str],
                           address_zip: Optional[str],
-                          kyc_verified: Optional[bool]
-                          ) -> Optional[Customer]:
-
-        # Validate all inputs
-        self.validate_all_inputs(
-            first_name=first_name,
-            middle_name=middle_name,
-            last_name=last_name,
-            date_of_birth=date_of_birth,
-            national_id=national_id,
-            email=email,
-            phone_number=phone_number,
-            address_city=address_city,
-            address_country=address_country,
-            address_zip=address_zip
-        )
-
-
-        # Create address object
-        customer_address = Address(
-            street=address_street,
-            city=address_city,
-            country=address_country,
-            state=address_state,
-            zip=address_zip)
-
+                          kyc_verified: Optional[bool]) -> Optional[Customer]:
         # Check for permission first
-        if self.require_view_customer_permission():
+        if self.require_create_customer_permission():
+            # Validate all inputs
+            self.validate_all_inputs(
+                first_name=first_name,
+                middle_name=middle_name,
+                last_name=last_name,
+                date_of_birth=date_of_birth,
+                national_id=national_id,
+                email=email,
+                phone_number=phone_number,
+                address_city=address_city,
+                address_country=address_country,
+                address_zip=address_zip
+            )
+
+            # Create address object
+            customer_address = Address(
+                street=address_street,
+                city=address_city,
+                country=address_country,
+                state=address_state,
+                zip=address_zip)
+
             # create customer using constructor
             created_customer = Customer(
                 first_name=first_name,
@@ -88,8 +85,40 @@ class CustomerService:
     #                          READ
     # -----------------------------------------------------------
 
-    def get_customer(self, customer_id: UUID) -> Customer:
-        pass
+    def get_customer_by_contact(self,
+                        email: Optional[str],
+                        phone_number: Optional[str]) -> Optional[List[Customer]]:
+
+        # Check for permission first
+        if self.require_view_customer_permission():
+
+            # Validate entries
+            if email is None and phone_number is None:
+                raise ValueError("At least one contact detail needs to be provided.")
+
+            # Email validation
+            if email is not None:
+                email = email.strip()
+                email_pattern = compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+                if not email_pattern.match(email):
+                    raise ValueError(f"{email} is not a valid email address.")
+
+            # Phone number
+            if phone_number is not None:
+                phone_number = phone_number.strip()
+                # Accepts optional leading +, digits, spaces, dashes, parentheses
+                phone_pattern = compile(r"^\+?[0-9][0-9\s\-()]{6,19}$")
+
+                if not phone_pattern.fullmatch(phone_number):
+                    raise ValueError(f"{phone_number} is not a valid phone number.")
+
+            # Conduct the search
+            return self.customer_repository.get_customers_by_contact(email=email, phone_number=phone_number)
+
+        else:
+            return None
+
+
 
     def search_customer(self,
             customer_id: Optional[UUID] = None,
@@ -97,24 +126,34 @@ class CustomerService:
             last_name: Optional[str] = None,
             address_country: Optional[str] = None,
             customer_status: Optional[CustomerStatus] = None,
+            email: Optional[str] = None,
+            phone_number: Optional[str] = None,
             limit: int = 100,
-            offset: int = 0,
-    ) -> List[Customer]:
+            offset: int = 0) -> Optional[List[Customer]]:
 
-        self.validate_search_inputs(first_name=first_name, address_country=address_country, last_name=last_name)
+        # Check for permission first
+        if self.require_view_customer_permission():
 
-        query_results = self.customer_repository.search(
-            customer_id=customer_id,
-            first_name=first_name,
-            last_name=last_name,
-            address_country=address_country,
-            customer_status=customer_status,
-            limit=limit, offset=offset
-        )
+            # Validate input parameters
+            self.validate_search_inputs(first_name=first_name,
+                                        address_country=address_country,
+                                        last_name=last_name,
+                                        email=email,
+                                        phone_number=phone_number)
 
-        return query_results
+            query_results = self.customer_repository.search(
+                customer_id=customer_id,
+                first_name=first_name,
+                last_name=last_name,
+                address_country=address_country,
+                customer_status=customer_status,
+                limit=limit, offset=offset
+            )
+            return query_results
+        else:
+            return None
 
-    def get_customer_accounts(self) -> List[Account]:
+    def get_customer_accounts(self, customer_id: UUID) -> List[Account]:
         self.require_view_account_permission()
         pass
 
@@ -127,7 +166,8 @@ class CustomerService:
     # -----------------------------------------------------------
 
     def update_customer_details(self,
-                          first_name: str,
+                                current_customer_id: UUID,
+                                first_name: str,
                           middle_name: Optional[str],
                           last_name: str,
                           date_of_birth: date,
@@ -139,8 +179,7 @@ class CustomerService:
                           address_state: Optional[str],
                           address_street: Optional[str],
                           address_zip: Optional[str],
-                          kyc_verified: Optional[bool]
-                          ) -> Optional[Customer]:
+                          kyc_verified: Optional[bool]) -> Optional[Customer]:
 
         # Validate all inputs
         self.validate_all_inputs(
@@ -155,16 +194,38 @@ class CustomerService:
             address_country=address_country,
             address_zip=address_zip
         )
-        self.require_update_customer_permission()
-        pass
+        if self.require_update_customer_permission():
+            customer_to_update = Customer(
+                customer_id=current_customer_id,
+                first_name=first_name,
+                middle_name=middle_name,
+                last_name=last_name,
+                date_of_birth=date_of_birth,
+                national_id=national_id,
+                email=email,
+                phone_number=phone_number,
+                address=Address(city=address_city,
+                        country=address_country,
+                        state=address_state,
+                        street=address_street,
+                        zip=address_zip),
+                kyc_verified=kyc_verified)
 
-    def deactivate_customer(self,
-                            customer_id: UUID,
-                            customer_first_name: str,
-                            customer_middle_name: str,
-                            customer_last_name: str) -> Customer:
-        self.require_update_customer_permission()
-        pass
+            # Update all fields, if any to be updated
+            self.customer_repository.update_all(customer_to_update)
+
+    def activate_customer(self, customer_id: UUID) -> Optional[Customer]:
+        if self.require_update_customer_permission():
+            return self.customer_repository.update_status(customer_id, CustomerStatus.ACTIVE)
+        else:
+            return None
+
+
+    def deactivate_customer(self, customer_id: UUID) -> Optional[Customer]:
+        if self.require_update_customer_permission():
+            return self.customer_repository.update_status(customer_id, CustomerStatus.DEACTIVATED)
+        else:
+            return None
 
 
     # -----------------------------------------------------------
@@ -173,8 +234,8 @@ class CustomerService:
 
 
     def delete_customer(self, first_name: str, last_name: str, customer_id: Optional[UUID] = None) -> None:
-        self.require_delete_customer_permission()
-        pass
+        if self.require_delete_customer_permission():
+            self.customer_repository.delete(customer_id)
 
     # -----------------------------------------------------------
     #                          HELPER
@@ -185,7 +246,6 @@ class CustomerService:
         return PermissionChecker.require_permission(
                 self.current_user,
                 Permission.VIEW_ANY_ACCOUNT)
-
 
     def require_create_customer_permission(self) -> bool:
         return PermissionChecker.require_permission(
@@ -227,7 +287,7 @@ class CustomerService:
         if not last_name or not last_name.strip():
             raise ValueError("Last name is required")
 
-        name_pattern = re.compile(r"^[A-Za-zÀ-ÖØ-öø-ÿ'\-\s]+$")
+        name_pattern = compile(r"^[A-Za-zÀ-ÖØ-öø-ÿ'\-\s]+$")
         for field_name, value in (("first_name", first_name),
                                   ("middle_name", middle_name),
                                   ("last_name", last_name)):
@@ -252,24 +312,24 @@ class CustomerService:
         # National ID validation
         if not national_id or not national_id.strip():
             raise ValueError("national_id is required.")
-        if not re.match(r"^[A-Za-z0-9\-]{4,20}$", national_id.strip()):
-            raise ValueError("national_id format is invalid.")
+        if not match(r"^[A-Za-z0-9\-]{4,20}$", national_id.strip()):
+            raise ValueError(f"{national_id} is not a valid national ID.")
 
         # Email validation
         if email is not None:
             email = email.strip()
-            email_pattern = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+            email_pattern = compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
             if not email_pattern.match(email):
-                raise ValueError("email is not a valid email address.")
+                raise ValueError(f"{email} is not a valid email address.")
 
         # Phone number
         if phone_number is not None:
             phone_number = phone_number.strip()
             # Accepts optional leading +, digits, spaces, dashes, parentheses
-            phone_pattern = re.compile(r"^\+?[0-9][0-9\s\-()]{6,19}$")
+            phone_pattern = compile(r"^\+?[0-9][0-9\s\-()]{6,19}$")
 
             if not phone_pattern.fullmatch(phone_number):
-                raise ValueError("phone_number is not a valid phone number.")
+                raise ValueError(f"{phone_number} is not a valid phone number.")
 
         # At least one contact method needs to be available.
         if not email and not phone_number:
@@ -277,36 +337,56 @@ class CustomerService:
 
         # Address validation
         if not address_city or not address_city.strip():
-            raise ValueError("address_city is required.")
+            raise ValueError("A city address is required.")
         if not address_country or not address_country.strip():
-            raise ValueError("address_country is required.")
+            raise ValueError("A country address is required.")
         # Zip validation
-        if address_zip is not None and not re.match(r"^[A-Za-z0-9\s\-]{2,12}$", address_zip.strip()):
-            raise ValueError("address_zip format is invalid.")
+        if address_zip is not None and not match(r"^[A-Za-z0-9\s\-]{2,12}$", address_zip.strip()):
+            raise ValueError("ZIP format is invalid.")
 
         # Check if customer exists on the persistence layer
         if self.customer_repository.exists_by_details(first_name=first_name,
                                                       middle_name=middle_name,
                                                       last_name=last_name,
                                                       date_of_birth=date_of_birth,
-                                                      national_id=national_id):
+                                                      national_id=national_id,
+                                                      email=email,
+                                                      phone_number=phone_number):
             raise ValueError("A customer with the described identity already exists.")
 
 
     def validate_search_inputs(self,first_name: Optional[str],
                                       last_name: Optional[str],
-                                      address_country: Optional[str]):
+                                      address_country: Optional[str],
+                               email: Optional[str],
+                               phone_number: Optional[str]):
 
         if not first_name or not first_name.strip():
             raise ValueError("First name is required")
         if not last_name or not last_name.strip():
             raise ValueError("Last name is required")
 
-        name_pattern = re.compile(r"^[A-Za-zÀ-ÖØ-öø-ÿ'\-\s]+$")
+        name_pattern = compile(r"^[A-Za-zÀ-ÖØ-öø-ÿ'\-\s]+$")
         for field_name, value in (("first_name", first_name),
                                   ("last_name", last_name)):
             if value and not name_pattern.match(value.strip()):
                 raise ValueError(f"{field_name} contains invalid characters.")
 
-        if address_country is not None and not re.match(r"^[A-Za-z0-9\-]{4,20}$", address_country.strip()):
+        if address_country is not None and not match(r"^[A-Za-z0-9\-]{4,20}$", address_country.strip()):
             raise ValueError("Country address is invalid.")
+
+        # Email validation
+        if email is not None:
+            email = email.strip()
+            email_pattern = compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+            if not email_pattern.match(email):
+                raise ValueError(f"{email} is not a valid email address.")
+
+        # Phone number
+        if phone_number is not None:
+            phone_number = phone_number.strip()
+            # Accepts optional leading +, digits, spaces, dashes, parentheses
+            phone_pattern = compile(r"^\+?[0-9][0-9\s\-()]{6,19}$")
+
+            if not phone_pattern.fullmatch(phone_number):
+                raise ValueError(f"{phone_number} is not a valid phone number.")
