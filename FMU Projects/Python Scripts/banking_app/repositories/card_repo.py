@@ -286,4 +286,4 @@ class CardRepository:
                 "DELETE FROM cards WHERE card_id = ?", (str(card_id),)
             )
             if cursor.rowcount == 0:
-                raise CardNotFoundError(f"No cards with id {card_id}")
+                raise CardNotFoundError(f"No card with id {card_id}")

@@ -261,7 +261,7 @@ class UserRepository:
                 """
                 UPDATE customers SET
                     username = ?, password_hash = ?, user_role = ?,
-                    custom_id = ?, user_status = ?, created_at = ?, last_login_at = ?
+                    custom_id = ?, user_status = ?, created_at = ?
                 WHERE user_id = ?
                 """,
                 (
@@ -271,7 +271,6 @@ class UserRepository:
                     str(user.customer_id),
                     user.user_status.value,
                     user.created_at.isoformat(),
-                    user.last_login_at.isoformat(),
                     str(user.user_id)
                 ),
             )

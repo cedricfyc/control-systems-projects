@@ -59,7 +59,7 @@ class AuditLogRepository:
 
     # ----- READ -----
 
-    def get_by_id(self, log_id: UUID) -> Optional[AuditLog]:
+    def get_by_id(self, log_id: UUID) -> AuditLog:
         """
         Get an AuditLog object by its id.
 
@@ -86,6 +86,64 @@ class AuditLogRepository:
 
         # Retrieve db entry and convert to AuditLog object
         return AuditLog.from_db_row(row)
+
+
+    def get_all_by_outcome(self, audit_outcome: AuditOutcome) -> List[AuditLog]:
+        """
+        Get a list of AuditLog objects by their outcome.
+
+        Parameters
+        ----------
+        audit_outcome
+            Outcome of audit log
+        Returns
+        -------
+
+        """
+
+        conn = get_connection()
+        try:
+            rows = conn.execute(
+                "SELECT * FROM audit_logs ORDER BY timestamp DESC WHERE audit_outcome = ?",
+                (audit_outcome.value,)
+            ).fetchone()
+        finally:
+            conn.close()
+
+        if rows is None:
+            raise AuditLogNotFoundError(f"No audit log with outcome {audit_outcome.value} found.")
+
+        # Retrieve db entry and convert to AuditLog object
+        return [AuditLog.from_db_row(r) for r in rows]
+
+
+    def get_all_by_action(self, audit_action: AuditAction) -> List[AuditLog]:
+        """
+        Get a list of AuditLog objects by their outcome.
+
+        Parameters
+        ----------
+        audit_action
+            Action documented by audit log
+        Returns
+        -------
+
+        """
+
+        conn = get_connection()
+        try:
+            rows = conn.execute(
+                "SELECT * FROM audit_logs ORDER BY timestamp DESC WHERE audit_action = ?",
+                (audit_action.value,)
+            ).fetchone()
+        finally:
+            conn.close()
+
+        if rows is None:
+            raise AuditLogNotFoundError(f"No audit log with action {audit_action.value} found.")
+
+        # Retrieve db entry and convert to AuditLog object
+        return [AuditLog.from_db_row(r) for r in rows]
 
 
     def list_all(self, limit: int = 100, offset: int = 0) -> List[AuditLog]:

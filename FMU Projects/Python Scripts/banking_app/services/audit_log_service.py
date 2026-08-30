@@ -15,6 +15,11 @@ class AuditLogService:
     def __init__(self, audit_log_repository: AuditLogRepository):
         self.audit_log_repository = audit_log_repository
 
+    # -----------------------------------------------------------
+    #                          CREATE
+    # -----------------------------------------------------------
+
+
     def log(self, audit_log: AuditLog):
         """
         Service-level functionality to create an audit log
@@ -31,5 +36,29 @@ class AuditLogService:
         # Create persistent repo to store the log
         return self.audit_log_repository.create(audit_log)
 
-    def get_audit_logs(self):
+    # -----------------------------------------------------------
+    #                          READ
+    # -----------------------------------------------------------
+
+    def get_all_audit_logs(self):
         pass
+
+    def get_audit_logs_by_id(self):
+        pass
+
+    def search_audit_logs(self):
+        pass
+
+    def get_all_audit_logs_by_outcome(self):
+        pass
+
+    # -----------------------------------------------------------
+    #                          UPDATE
+    # -----------------------------------------------------------
+
+    def update_audit_log(self, audit_log: AuditLog) -> AuditLog:
+        pass
+
+    # -----------------------------------------------------------
+    #                          DELETE
+    # -----------------------------------------------------------

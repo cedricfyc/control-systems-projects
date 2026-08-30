@@ -4,10 +4,11 @@ Customer model for the Banking CLI application.
 
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone, date
 from typing import Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from banking_app.utils.enums import CustomerStatus
 
@@ -26,17 +27,15 @@ class Address:
 # for the given variables and data types.
 @dataclass
 class Customer:
-    customer_id: UUID
     first_name: str
     middle_name: str
     last_name: str
     date_of_birth: date
     national_id: str
+    address: Address
+    customer_id: UUID = field(default_factory=uuid4)
     email: Optional[str] = None
     phone_number: Optional[str] = None
-
-    # Custom address object
-    address: Optional[Address] = None
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     customer_status: CustomerStatus = CustomerStatus.ACTIVE
     kyc_verified: bool = field(default=False)

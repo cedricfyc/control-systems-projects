@@ -12,6 +12,7 @@ from uuid import UUID
 from banking_app.database.db_connector import get_connection, db_transaction
 from banking_app.models.account import Account, AccountStatus, AccountType
 
+from banking_app.repositories.customer_repo import CustomerRepository
 
 class AccountNotFoundError(Exception):
     pass
@@ -170,6 +171,45 @@ class AccountRepository:
         return [Account.from_db_row(r) for r in rows]
 
 
+    def get_by_customer_details(
+            self,
+            customer_first_name: str,
+            customer_middle_name: str,
+            customer_last_name: str
+    ) -> List[Account]:
+        """
+        Get all accounts belonging to customers with the given name.
+
+        Parameters
+        ----------
+        customer_first_name : str
+            Customer's first name.
+        customer_middle_name : str
+            Customer's middle name.
+        customer_last_name : str
+            Customer's last name.
+
+        Returns
+        -------
+        List[Account]
+            All accounts belonging to all customers matching the given name.
+        """
+        customer_repo = CustomerRepository()
+
+        customers = customer_repo.get_by_name(
+            customer_first_name,
+            customer_middle_name,
+            customer_last_name
+        )
+
+        accounts = []
+
+        for customer in customers:
+            accounts.extend(self.get_all_by_customer(customer.customer_id))
+
+        return accounts
+
+
     def exists(self, account_number: str) -> bool:
         """
         Check if an account exists in database by account_number.
@@ -198,8 +238,8 @@ class AccountRepository:
             customer_id: Optional[UUID] = None,
             account_type: Optional[AccountType] = None,
             account_status: Optional[AccountStatus] = None,
-            min_balance: Optional[int] = None,
-            max_balance: Optional[int] = None,
+            balance: Optional[Decimal] = None,
+            min_balance: Optional[Decimal] = None,
             currency: Optional[str] = None,
             limit: int = 100,
             offset: int = 0,
@@ -214,7 +254,7 @@ class AccountRepository:
         account_type
         account_status
         min_balance
-        max_balance
+        balance
         currency
         limit
         offset
@@ -239,12 +279,16 @@ class AccountRepository:
         if currency is not None:
             clauses.append("currency = ?")
             params.append(currency)
+        # .append() appends a single object at the end of the list
+        # .extend() appends multiple objects that are taken from inside the specified iterable
+        # An approximation of the balance is enough to filter
+        if balance is not None:
+            clauses.append("CAST(balance AS REAL) >= ? AND CAST(balance AS REAL) <= ?")
+            params.extend((str(balance * 0.8), str(balance * 1.2)))
         if min_balance is not None:
-            clauses.append("CAST(balance AS REAL) >= ?")
+            clauses.append("CAST(min_balance AS REAL) >= ?")
             params.append(float(min_balance))
-        if max_balance is not None:
-            clauses.append("CAST(balance AS REAL) <= ?")
-            params.append(float(max_balance))
+
 
         # Construct the SQL Query to find the relevant accounts.
         where_sql = f"WHERE {' AND '.join(clauses)}" if clauses else ""

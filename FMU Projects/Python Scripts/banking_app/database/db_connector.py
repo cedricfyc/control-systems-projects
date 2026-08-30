@@ -37,7 +37,7 @@ CREATE INDEX IF NOT EXISTS idx_customers_customer_status
 CREATE TABLE IF NOT EXISTS users (
     user_id        TEXT PRIMARY KEY,
     customer_id    TEXT,
-    username       TEXT NOT NULL,
+    username       TEXT NOT NULL UNIQUE,
     password_hash  TEXT NOT NULL,
     user_role      TEXT NOT NULL,
     user_status    TEXT NOT NULL,

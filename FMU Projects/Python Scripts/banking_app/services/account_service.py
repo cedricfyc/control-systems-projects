@@ -1,13 +1,12 @@
 from decimal import Decimal
-from typing import Optional
+from typing import Optional, List
 from uuid import UUID, uuid4
 
 from banking_app.services.audit_log_service import AuditLogService
-from banking_app.services.auth_service import AuthorisationService
 
 from banking_app.models.account import Account
 from banking_app.models.audit_log import AuditLog
-from banking_app.models.user import User
+from banking_app.models.user import User, PermissionChecker
 
 from banking_app.utils.enums import Permission
 
@@ -48,6 +47,11 @@ class AccountService:
         self.account_repository = account_repository
         self.customer_repository = customer_repository
         self.audit_log_service = audit_log_service
+
+    # -----------------------------------------------------------
+    #                          CREATE
+    # -----------------------------------------------------------
+
 
     def create_account(
             self,
@@ -101,7 +105,7 @@ class AccountService:
         """
 
         # Check if current user has the rights to account creation
-        AuthorisationService.require_permission(
+        PermissionChecker.require_permission(
             current_user,
             Permission.CREATE_ACCOUNT,
         )
@@ -189,14 +193,70 @@ class AccountService:
 
         return created_account
 
+    # -----------------------------------------------------------
+    #                          READ
+    # -----------------------------------------------------------
 
+
+
+    def get_account_details(self,
+                            account_id: UUID,
+                            account_number: Optional[str] = None) -> None:
+        pass
+
+    def get_account_balance(self) -> Decimal:
+        pass
+
+    def get_accounts_by_status(self) -> List[Account]:
+        pass
+
+    def search_accounts(self) -> List[Account]:
+        pass
+
+    # -----------------------------------------------------------
+    #                          UPDATE
+    # -----------------------------------------------------------
+
+
+    def close_account(self,
+                      account_id: Optional[UUID] = None,
+                      account_number: Optional[str] = None,
+                      customer_id: Optional[UUID] = None):
+        pass
+
+
+    def freeze_account(self,
+                       account_id: Optional[UUID] = None,
+                       account_number: Optional[str] = None,
+                       customer_id: Optional[UUID] = None):
+        pass
+
+
+    def unfreeze_account(self,
+                         account_id: Optional[UUID] = None,
+                         account_number: Optional[str] = None,
+                         customer_id: Optional[UUID] = None):
+        pass
+
+
+    # -----------------------------------------------------------
+    #                          DELETE
+    # -----------------------------------------------------------
+
+
+    def delete_account(self,
+                         account_id: Optional[UUID] = None,
+                         account_number: Optional[str] = None,
+                         customer_id: Optional[UUID] = None):
+        pass
+
+    # -----------------------------------------------------------
+    #                          HELPER
+    # -----------------------------------------------------------
 
     def _generate_account_number(self) -> str:
         """
         Generate a unique account number.
-
-        The actual implementation should preferably delegate
-        uniqueness enforcement to the database as well.
 
         Returns
 

@@ -6,6 +6,7 @@ No business logic should be placed in this layer; that belongs in services/accou
 from __future__ import annotations
 
 from typing import List, Optional
+from datetime import date
 from uuid import UUID
 
 from banking_app.database.db_connector import get_connection, db_transaction
@@ -96,30 +97,47 @@ class CustomerRepository:
         return Customer.from_db_row(row)
 
 
-    def get_all_by_last_name(self, last_name: str) -> List[Customer]:
+    def get_by_name(
+            self,
+            first_name: str,
+            middle_name: str,
+            last_name: str
+    ) -> List[Customer]:
         """
-        Get all Customers inside the database with a matching last name.
+        Get all Customers inside the database with a matching name.
 
         Parameters
         ----------
-        last_name
+        first_name : str
+            Customer's first name.
+        middle_name : str
+            Customer's middle name.
+        last_name : str
+            Customer's last name.
 
         Returns
         -------
-
+        List[Customer]
+            All customers matching the given first, middle, and last name.
         """
         conn = get_connection()
         try:
             rows = conn.execute(
-                "SELECT * FROM customers WHERE last_name = ?  ORDER BY created_at DESC",
-                (last_name,)
+                """
+                SELECT *
+                FROM customers
+                WHERE first_name = ?
+                  AND middle_name = ?
+                  AND last_name = ?
+                ORDER BY created_at DESC
+                """,
+                (first_name, middle_name, last_name)
             ).fetchall()
         finally:
             conn.close()
 
-
-        # Retrieve the db entry and convert to Customer object
-        return [Customer.from_db_row(r) for r in rows]
+        # Retrieve the db entries and convert them to Customer objects
+        return [Customer.from_db_row(row) for row in rows]
 
 
     def list_all(self, limit: int = 100, offset: int = 0) -> List[Customer]:
@@ -146,18 +164,17 @@ class CustomerRepository:
         return [Customer.from_db_row(r) for r in rows]
 
 
-    def exists(self, customer_id: Optional[UUID] = None) -> bool:
+    def exists_by_id(self, customer_id: Optional[UUID] = None) -> bool:
         """
         Check if a customer exists in database by customer_id.
 
-        Parameters
-        ----------
-        customer_id
+        Args:
+            customer_id:
 
-        Returns
-        -------
+        Returns:
 
         """
+
         conn = get_connection()
         try:
             row = conn.execute(
@@ -170,9 +187,58 @@ class CustomerRepository:
         return row is not None
 
 
+    def exists_by_details(self,
+                          first_name: str,
+                          middle_name: Optional[str],
+                          last_name: str,
+                          date_of_birth: date,
+                          national_id: str) -> bool:
+        """
+        Check if a customer exists in database by name, date of birth and nationality.
+        Called before creating the customer with a valid customer ID.
+
+        Args:
+            first_name:
+            middle_name:
+            last_name:
+            date_of_birth:
+            national_id:
+
+        Returns:
+
+        """
+
+        sql_query = """
+            SELECT 1
+            FROM customers
+            WHERE first_name = ?
+              AND last_name = ?
+              AND date_of_birth = ?
+              AND national_id = ?
+        """
+
+        parameters = [first_name, last_name, date_of_birth, national_id]
+
+        # Consider middle name as well if provided
+        if middle_name is not None:
+            sql_query += " AND middle_name = ?"
+            parameters.insert(1, middle_name)
+
+        sql_query += " LIMIT 1"
+
+        conn = get_connection()
+        try:
+            row = conn.execute(sql_query, parameters).fetchone()
+        finally:
+            conn.close()
+
+        return row is not None
+
+
     def search(
             self,
             customer_id: Optional[UUID] = None,
+            first_name: Optional[str] = None,
             last_name: Optional[str] = None,
             address_country: Optional[str] = None,
             customer_status: Optional[CustomerStatus] = None,
@@ -202,6 +268,9 @@ class CustomerRepository:
         if customer_id is not None:
             clauses.append("customer_id = ?")
             params.append(str(customer_id))
+        if first_name is not None:
+            clauses.append("first_name = ?")
+            params.append(first_name)
         if last_name is not None:
             clauses.append("last_name = ?")
             params.append(last_name)

@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from banking_app.utils.enums import Permission, UserStatus
 from banking_app.models.user_role import UserRole, get_permissions_for_role
@@ -18,10 +18,10 @@ class User:
     Customer represents the banking customer.
     """
 
-    user_id: UUID
     username: str
     password_hash: str
     user_role: UserRole
+    user_id: UUID = field(default_factory=uuid4)
     customer_id: Optional[UUID] = None
     user_status: UserStatus = UserStatus.ACTIVE
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
@@ -94,3 +94,67 @@ class User:
             created_at=row["created_at"].fromisoformat(),
             last_login_at=row["last_login_at"].fromisoformat(),
         )
+
+
+class PermissionChecker:
+    """
+    Handles application authorisation.
+    """
+
+    @staticmethod
+    def require_permission(user: User, permission: Permission) -> bool:
+        """
+        Checks for permission of the user and outputs authorisation status.
+
+        Parameters
+        ----------
+        user
+        permission
+
+        Returns
+        -------
+
+        """
+
+        if not user.has_permission(permission):
+            raise AuthorisationError(
+                f"User '{user.username}' with role "
+                f"'{user.user_role.value}' lacks permission "
+                f"'{permission.value}'."
+            )
+
+        else:
+            return True
+
+    @staticmethod
+    def require_customer_access(user: User, target_customer_id: UUID) -> bool:
+        """
+        Checks if user has access to customer data.
+        If customer with the right id, allow access.
+
+        Parameters
+        ----------
+        user
+        target_customer_id
+
+        Returns
+        -------
+
+        """
+
+        # Case of customer
+        if user.user_role == user.user_role.CUSTOMER:
+            if user.customer_id != target_customer_id:
+                raise AuthorisationError(
+                    "Customers can only have access to their own data."
+                )
+            return True
+
+        # Case of staff roles
+        if not user.has_permission(Permission.VIEW_ANY_CUSTOMER):
+            raise AuthorisationError(
+                "User is not authorized to access customer data."
+            )
+        # Staff has access
+        else:
+            return True
